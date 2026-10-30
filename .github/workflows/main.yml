@@ -1,0 +1,39 @@
+name: Build APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Распаковать проект
+        run: unzip -q voice-translator-android.zip
+
+      - name: Скачать модель распознавания русского
+        run: |
+          cd voice-translator-android
+          mkdir -p app/src/main/assets
+          curl -L -o model.zip https://alphacephei.com/vosk/models/vosk-model-small-ru-0.22.zip
+          unzip -q model.zip
+          mv vosk-model-small-ru-0.22 app/src/main/assets/model-ru
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Собрать APK
+        working-directory: voice-translator-android
+        run: gradle assembleDebug
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: voice-translator-apk
+          path: voice-translator-android/app/build/outputs/apk/debug/app-debug.apk
